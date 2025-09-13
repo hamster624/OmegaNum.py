@@ -98,7 +98,6 @@ def correct(x):
         while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
 
         return arr
-
     raise TypeError("Unsupported type for correct")
 def fromString(s):
     s = s.strip()
@@ -433,14 +432,11 @@ def log(x):
     if len(arr) > 3: return correct(arr)
     return correct(arr)
 
-
-def slog(x): return hyper_log(x, 2)
-def plog(x): return hyper_log(x, 3)
-def hlog(x): return hyper_log(x, 4)
 def hyper_log(x, k):
+    if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
     if k < 1: raise ValueError("k must be >= 1")
     arr = correct(x)
-    if arr[0] == 1: raise ValueError("Can't plog a negative")
+    if arr[0] == 1: raise ValueError("Can't hyper_log a negative")
     if lte(arr, 10): return correct(math.log10(arr[1]))
     if k == 1: return correct(math.log10(tofloat(arr)))
     if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(math.log10(tofloat(hyper_log(arr, k - 1))) + 1)
@@ -553,97 +549,11 @@ def gamma(x):
 	return factorial(sub(x,1))
 
 # From ExpantaNum.js
-def tetration(a, r):
-    a = correct(a)
-    r = correct(r)
-    LOOP_CAP = 20
-
-    if lte(r, -2):
-        raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
-
-    if eq(a, 0):
-        if eq(r, 0):
-            raise ValueError("0^^0 is undefined")
-        if _is_int_like(r): return correct(0 if int(tofloat(r)) % 2 == 0 else 1)
-        raise ValueError("tetr(0, r) with non-integer r is not supported")
-
-    if eq(a, 1):
-        if eq(r, -1):
-            raise ValueError("1^^(-1) is undefined")
-        return [0, 1]
-    if gt(r,[0,1,1,MAX_SAFE_INT]) or gt(a,[0, 1,1,1,MAX_SAFE_INT]): return maximum(a,r)
-    if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]): return add(slog(a), r) + [1]
-    if gt(r,[0, 1,MAX_SAFE_INT]) or gt(a,[0, 1,1,MAX_SAFE_INT]):
-        q = r[:3] + [(r[3] + 1)]
-        return maximum(q,a)
-    if eq(r, -1): return [0, 0]
-    if eq(r, 0): return [0, 1]
-    if eq(r, 1): return a
-    if eq(r, 2): return power(a, a)
-    if eq(a, 2):
-        if eq(r, 3): return [0, 16]
-        if eq(r, 4): return [0, 65536]
-    if lt(a, 1.444667861009766):
-        n = neg(ln(a))
-        return divide(lambertw(n), n)
-    s = tofloat(r)
-    if s is None:
-        try:
-            if lt(a, 1.444667861009766):
-                n = neg(ln(a))
-                return divide(lambertw(n), n)
-        except Exception:
-            pass
-        raise ValueError("tetr(a, r): r is too large for iterative evaluation in this simplified implementation")
-
-    u = int(s)
-    frac = s - u
-    if frac > 1e-15: f = power(a, frac)
-       
-    else:
-        f = a
-        if u > 0: u -= 1
-    last = None
-    h = 0
-
-    c = [0, 308, 1]
-    if  LOOP_CAP > h:
-        while u != 0 and lt(f, c) and h < LOOP_CAP:
-            if u > 0:
-                f_next = power(a, f)
-                if last is not None and eq(f_next, last):
-                    u = 0
-                    break
-                last = f_next
-                f = f_next
-                u -= 1
-            else:
-                f_next = logbase(f, a)
-                if last is not None and eq(f_next, last):
-                    u = 0
-                    break
-                last = f_next
-                f = f_next
-                u += 1
-            h += 1
-
-    if h == LOOP_CAP or lt(a, 1.444667861009766): u = 0
-
-    f_arr = correct(f)
-    if u != 0:
-        if len(f_arr) == 2: f_arr = [f_arr[0], f_arr[1], u]
-        else:
-            while len(f_arr) < 3:
-                f_arr.append(0)
-            f_arr[2] = f_arr[2] + u
-        f = correct(f_arr)
-    else: f = correct(f_arr)
-    return f
 def arrow(base, arrows, n, a_arg=0):
+    if tofloat(arrows) > 40: raise ValueError("Arrow count must be under 40")
     def _arrow_raw(base, arrows, n, a_arg=0):
         r_correct = correct(arrows)
-        if not _is_int_like(arrows) or tofloat(r_correct) < 0:
-            raise ValueError("arrows must be a non-negative integer-like value")
+        if not _is_int_like(arrows) or tofloat(r_correct) < 0: raise ValueError("arrows must be a non-negative integer-like value")
         r = int(tofloat(r_correct))
         t = correct(base)
         n = correct(n)
@@ -651,39 +561,28 @@ def arrow(base, arrows, n, a_arg=0):
             raise ValueError("n must be >= 0")
         if r == 0: return multiply(t, n)
         if r == 1: return power(t, n)
-        if r == 2: return tetration(t, n)
-        if r > MAX_SAFE_INT: return addlayer(r_correct)
         if tofloat(n) is None:
             arr_n = correct(n)
             arr_res = arr_n[:]
             target_len = r + 2
-            while len(arr_res) < target_len:
-                arr_res.append(0)
+            while len(arr_res) < target_len: arr_res.append(0)
             arr_res[-1] = 1
             return correct(arr_res)
         if tofloat(t) is None:
             arr_t = correct(t)
             arr_res = arr_t[:]
             target_len = r + 1
-            while len(arr_res) < target_len:
-                arr_res.append(0)
+            while len(arr_res) < target_len: arr_res.append(0)
             s_n = tofloat(n)
             if s_n is not None and abs(s_n - round(s_n)) < 1e-12:
                 val = int(round(s_n)) - 1
                 if val < 0: val = 0
                 arr_res[-1] = val
-            else:
-                arr_res[-1] = 1
+            else: arr_res[-1] = 1
             return correct(arr_res)
         thr_str_r = f"10{{{r}}}9007199254740991"
         thr_str_rp1 = f"10{{{r+1}}}9007199254740991"
-        try:
-            thr_r = correct(thr_str_r)
-            thr_rp1 = correct(thr_str_rp1)
-        except Exception:
-            thr_r = [0, 10000000000, 306]
-            thr_rp1 = [0, 1e309 if hasattr(math, 'inf') else 1e308]
-        if gte(t, thr_r) or tofloat(n) is None and gt(n, [0, MAX_SAFE_INT]): return maximum(t, n)
+        if gte(t, thr_str_r) or tofloat(n) is None and gt(n, [0, MAX_SAFE_INT]): return maximum(t, n)
         s = tofloat(n)
         if s is not None and abs(s - round(s)) < 1e-12:
             u = int(round(s))
@@ -691,7 +590,7 @@ def arrow(base, arrows, n, a_arg=0):
             i = t
             if u > 0: u -= 1
             fcount = 0
-            limit = thr_rp1
+            limit = thr_str_rp1
             while u != 0 and lt(i, limit) and fcount < 100:
                 i = _arrow_raw(t, r-1, i, a_arg + 1)
                 u -= 1
@@ -716,7 +615,7 @@ def arrow(base, arrows, n, a_arg=0):
                 i = t
                 if u > 0: u -= 1
             fcount = 0
-            limit = thr_rp1
+            limit = thr_str_rp1
             while u != 0 and lt(i, limit) and fcount < 100:
                 if u > 0:
                     i = _arrow_raw(t, r-1, i, a_arg + 1)
@@ -737,8 +636,13 @@ def arrow(base, arrows, n, a_arg=0):
                 pass
             return correct(i)
         return maximum(t, n)
-    res = _arrow_raw(base, arrows, n, a_arg) # why this? cuz the output is weird
+    res = _arrow_raw(base, arrows, n, a_arg) # why this? cuz the output is weird if i dont
     return correct(res)
+
+def slog(x): return hyper_log(x, 2)
+def plog(x): return hyper_log(x, 3)
+def hlog(x): return hyper_log(x, 4)
+def tetration(a, r): return arrow(a,2,r)
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
 def heptation(a,b): return arrow(a,5,b)
@@ -865,6 +769,7 @@ def _suffix(x):
 
 def suffix(x):
     x = correct(x)
+    if gt(x, [0, 10000000000, 8]): return format(x)
     if lt(x, [0, max_suffix, 1]): return _suffix(x)
     max_repeats = 10
     e_count = 0
