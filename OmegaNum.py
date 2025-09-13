@@ -446,7 +446,7 @@ def hyper_log(x, k):
     if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(math.log10(tofloat(hyper_log(arr, k - 1))) + 1)
     if len(arr) < (k + 1): return correct(math.log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
     if len(arr) == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
-    if len(arr) == (k + 2): return correct(0, arr[1:(k + 1)] + [arr[k + 1] - 1])
+    if len(arr) == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
 
 def addlayer(x):
     arr = correct(x)
