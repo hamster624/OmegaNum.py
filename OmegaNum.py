@@ -1,4 +1,7 @@
 import math
+#if you want to do more than 900 arrows uncomment the next 2 lines
+#import sys
+#sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 6 # How many decimals (duh). Max 16
 max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific Example: e1000 -> e1K
@@ -36,7 +39,7 @@ def correct(x):
         arr = x[:]
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
-        if arr[0] not in (0, 1): raise ValueError("First element must be 0 (positive) or 1 (negative) (array:{arr})")
+        if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
 
         for i in range(1, len(arr)):
             if isinstance(arr[i], str):
@@ -270,7 +273,7 @@ def neg(x):
 # Everything after this is from https://github.com/cloudytheconqueror/letter-notation-format
 def _to_pair_array(arr):
     if not arr: return [[0, 0]]
-    if isinstance(arr[0], (list, tuple)) and len(arr[0]) == 2: return [ [int(h), float(v)] for h, v in arr ]
+    if isinstance(arr[0], (list, tuple)) and len(arr[0]) == 2: return [[int(h), float(v)] for h, v in arr]
     if not isinstance(arr, (list, tuple)): raise TypeError("polarize: unsupported array type")
     if len(arr) == 1: return [[0, float(arr[0])]]
     base_val = float(arr[1])
@@ -635,104 +638,99 @@ def tetration(a, r):
         f = correct(f_arr)
     else: f = correct(f_arr)
     return f
-def arrow(base, arrows, n, a_arg=0):
-    def _arrow_raw(base, arrows, n, a_arg=0):
-        r_correct = correct(arrows)
-        if not _is_int_like(arrows) or tofloat(r_correct) < 0: raise ValueError("arrows must be a non-negative integer-like value")
-        r = int(tofloat(r_correct))
-        t = correct(base)
-        n = correct(n)
-        if lt(n, [0,0]):
-            raise ValueError("n must be >= 0")
-        if r == 0: return multiply(t, n)
-        if r == 1: return power(t, n)
-        if r == 2: return tetration(t, n)
-        if r > MAX_SAFE_INT: return addlayer(r_correct)
-        if tofloat(n) is None:
-            arr_n = correct(n)
-            arr_res = arr_n[:]
-            target_len = r + 2
-            while len(arr_res) < target_len:
-                arr_res.append(0)
+def _arrow(t, r, n, a_arg=0):
+    if r == 0: return multiply(t, n)
+    if r == 1: return power(t, n)
+    if r == 2: return tetration(t, n)
+    if r > MAX_SAFE_INT: return addlayer(r)
+    s = tofloat(n)
+    if s is None:
+        arr_n = correct(n)
+        target_len = r + 2
+        arr_res = arr_n + [0] * (target_len - len(arr_n))
+        arr_res[-1] = 1
+        return correct(arr_res)
+
+    s_t = tofloat(t)
+    if s_t is None:
+        arr_t = correct(t)
+        target_len = r + 1
+        arr_res = arr_t + [0] * (target_len - len(arr_t))
+        if abs(s - round(s)) < 1e-12:
+            val = max(0, int(round(s)) - 1)
+            arr_res[-1] = val
+        else:
             arr_res[-1] = 1
-            return correct(arr_res)
-        if tofloat(t) is None:
-            arr_t = correct(t)
-            arr_res = arr_t[:]
-            target_len = r + 1
-            while len(arr_res) < target_len:
-                arr_res.append(0)
-            s_n = tofloat(n)
-            if s_n is not None and abs(s_n - round(s_n)) < 1e-12:
-                val = int(round(s_n)) - 1
-                if val < 0: val = 0
-                arr_res[-1] = val
-            else:
-                arr_res[-1] = 1
-            return correct(arr_res)
-        thr_str_r = f"10{{{r}}}9007199254740991"
-        thr_str_rp1 = f"10{{{r+1}}}9007199254740991"
+        return correct(arr_res)
+
+    thr_r = [0, MAX_SAFE_INT, 1]
+
+    if gte(t, thr_r) or (tofloat(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
+
+    if abs(s - round(s)) < 1e-12:
+        u = int(round(s))
+        if u <= 0: return [0, 1]
+        i = t
+        u -= 1
+        fcount = 0
+        limit = thr_r
+        while u != 0 and lt(i, limit) and fcount < 100:
+            i = _arrow(t, r - 1, i, a_arg + 1)
+            u -= 1
+            fcount += 1
+        if fcount == 100:
+            return correct([[0, 10], [r, 1]])
         try:
-            thr_r = correct(thr_str_r)
-            thr_rp1 = correct(thr_str_rp1)
-        except Exception:
-            thr_r = [0, 10000000000, 306]
-            thr_rp1 = [0, 1e309 if hasattr(math, 'inf') else 1e308]
-        if gte(t, thr_r) or tofloat(n) is None and gt(n, [0, MAX_SAFE_INT]): return maximum(t, n)
-        s = tofloat(n)
-        if s is not None and abs(s - round(s)) < 1e-12:
-            u = int(round(s))
-            if u <= 0: return [0, 1]
-            i = t
-            if u > 0: u -= 1
-            fcount = 0
-            limit = thr_rp1
-            while u != 0 and lt(i, limit) and fcount < 100:
-                i = _arrow_raw(t, r-1, i, a_arg + 1)
-                u -= 1
-                fcount += 1
-            if fcount == 100: return correct([[0, 10], [r, 1]])
-            try:
-                if len(i) >= r:
-                    idx = r
-                    if idx < len(i): i[idx] = i[idx] + u
-                    else:
-                        while len(i) <= idx: i.append(0)
-                        i[idx] = i[idx] + u
-                    return i
-            except Exception:
-                pass
-            return correct(i)
-        if s is not None:
-            u = math.floor(s)
-            frac = s - u
-            if frac > 1e-15: i = _arrow_raw(t, r-1, frac, a_arg + 1)
-            else:
-                i = t
-                if u > 0: u -= 1
-            fcount = 0
-            limit = thr_rp1
-            while u != 0 and lt(i, limit) and fcount < 100:
-                if u > 0:
-                    i = _arrow_raw(t, r-1, i, a_arg + 1)
-                    u -= 1
+            if len(i) >= r:
+                idx = r
+                if idx < len(i):
+                    i[idx] = i[idx] + u
                 else:
-                    break
-                fcount += 1
-            if fcount == 100: return correct([[0, 10], [r, 1]])
-            try:
-                if len(i) >= r:
-                    idx = r
-                    if idx < len(i): i[idx] = i[idx] + u
-                    else:
-                        while len(i) <= idx: i.append(0)
-                        i[idx] = i[idx] + u
-                    return i
-            except Exception:
-                pass
-            return correct(i)
-        return maximum(t, n)
-    res = _arrow_raw(base, arrows, n, a_arg) # why this? cuz the output is weird
+                    i = i + [0] * (idx - len(i) + 1)
+                    i[idx] = i[idx] + u
+                return i
+        except Exception: pass
+        return correct(i)
+
+    u = math.floor(s)
+    frac = s - u
+    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1)
+    else:
+        i = t
+        if u > 0: u -= 1
+    fcount = 0
+    limit = thr_r
+    while u != 0 and lt(i, limit) and fcount < 100:
+        if u > 0:
+            i = _arrow(t, r - 1, i, a_arg + 1)
+            u -= 1
+        else: break
+        fcount += 1
+    if fcount == 100: return correct([[0, 10], [r, 1]])
+    try:
+        if len(i) >= r:
+            idx = r
+            if idx < len(i):
+                i[idx] = i[idx] + u
+            else:
+                i = i + [0] * (idx - len(i) + 1)
+                i[idx] = i[idx] + u
+            return i
+    except Exception: pass
+    return correct(i)
+
+def arrow(base, arrows, n, a_arg=0):
+    r_correct = correct(arrows)
+    if not _is_int_like(arrows) or tofloat(r_correct) < 0:
+        raise ValueError("arrows must be a non-negative integer-like value")
+
+    r = int(tofloat(r_correct))
+    t = correct(base)
+    n_corr = correct(n)
+    if lt(n_corr, [0, 0]):
+        raise ValueError("n must be >= 0")
+
+    res = _arrow(t, r, n_corr, a_arg)
     return correct(res)
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
@@ -761,7 +759,7 @@ def string(arr, top=True):
     sign = "-" if arr[0] == 1 and top else ""
     if len(arr) == 2: return f"{sign}{arr[1]}"
     e_count = arr[2]
-    if e_count <= 10: inner = f"{'e'*e_count}{arr[1]}"
+    if e_count <= 7: inner = f"{'e'*e_count}{arr[1]}"
     else: inner = f"(10^)^{e_count} {arr[1]}"
     for d in range(3, len(arr)):
         n = arr[d]
