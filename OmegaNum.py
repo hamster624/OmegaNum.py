@@ -1,10 +1,12 @@
 import math
-#if you want to do more than 900 arrows uncomment the next 2 lines
+# if you want to do more than 900 arrows uncomment the next 2 lines. (Note: You dont need to do this if precise_arrow = False)
 #import sys
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 6 # How many decimals (duh). Max 16
-max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific Example: e1000 -> e1K
+precise_arrow = True # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
+arrow_precision = 18 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
+max_suffix = 3_000_003 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -25,7 +27,7 @@ MultOnes = [
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 _log10 = math.log10
-# You can ignore these, these are only to help the code
+# You can ignore these, these are only to help the code.
 def correct(x):
     if isinstance(x, (int, float)): 
         return correct([0 if x >= 0 else 1, abs(x)])
@@ -638,11 +640,15 @@ def tetration(a, r):
         f = correct(f_arr)
     else: f = correct(f_arr)
     return f
-def _arrow(t, r, n, a_arg=0):
-    if r == 0: return multiply(t, n)
-    if r == 1: return power(t, n)
-    if r == 2: return tetration(t, n)
-    if r > MAX_SAFE_INT: return addlayer(r)
+def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
+    r = tofloat(correct(r))
+    if eq(r, 0): return multiply(t, n)
+    if eq(r, 1): return power(t, n)
+    if eq(r, 2): return tetration(t, n)
+    if eq(t,2) and eq(n,2): return [0, 4]
+    if prec == False and r > arrow_precision and gte(n,2):
+        arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
+        return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
     s = tofloat(n)
     if s is None:
         arr_n = correct(n)
@@ -675,7 +681,7 @@ def _arrow(t, r, n, a_arg=0):
         fcount = 0
         limit = thr_r
         while u != 0 and lt(i, limit) and fcount < 100:
-            i = _arrow(t, r - 1, i, a_arg + 1)
+            i = _arrow(t, r - 1, i, a_arg + 1, True)
             u -= 1
             fcount += 1
         if fcount == 100:
@@ -694,7 +700,7 @@ def _arrow(t, r, n, a_arg=0):
 
     u = math.floor(s)
     frac = s - u
-    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1)
+    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True)
     else:
         i = t
         if u > 0: u -= 1
@@ -706,7 +712,6 @@ def _arrow(t, r, n, a_arg=0):
             u -= 1
         else: break
         fcount += 1
-    if fcount == 100: return correct([[0, 10], [r, 1]])
     try:
         if len(i) >= r:
             idx = r
@@ -719,7 +724,7 @@ def _arrow(t, r, n, a_arg=0):
     except Exception: pass
     return correct(i)
 
-def arrow(base, arrows, n, a_arg=0):
+def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     r_correct = correct(arrows)
     if not _is_int_like(arrows) or tofloat(r_correct) < 0:
         raise ValueError("arrows must be a non-negative integer-like value")
@@ -730,7 +735,7 @@ def arrow(base, arrows, n, a_arg=0):
     if lt(n_corr, [0, 0]):
         raise ValueError("n must be >= 0")
 
-    res = _arrow(t, r, n_corr, a_arg)
+    res = _arrow(t, r, n_corr, a_arg, prec)
     return correct(res)
 def pentation(a,b): return arrow(a,3,b)
 def hexation(a,b): return arrow(a,4,b)
@@ -739,7 +744,7 @@ def octation(a,b): return arrow(a,6,b)
 def nonation(a,b): return arrow(a,7,b)
 def decation(a,b): return arrow(a,8,b)
 def logbase(a,b): return divide(log(a),log(b))
-def ln(a): return divide(log(a),0.4342944819032518)
+def ln(a): return divide(log(a),0.4342944819032518) # log10(a)/log10(e)
 def sqrt(a): return power(a, 0.5)
 def root(a,b): return power(a, divide(1,b))
 def exp(x): return power(2.718281828459045, x)
@@ -858,12 +863,12 @@ def suffix(x):
     x = correct(x)
     if gt(x, [0, 10000000000, 8]): return format(x)
     if lt(x, [0, max_suffix, 1]): return _suffix(x)
-    max_repeats = 10
+    max_repeats = 7
     e_count = 0
     while gte(x, [0, max_suffix, 1]) and e_count < max_repeats:
         x = log(x)
         e_count += 1
-    if e_count == 0: return correct(x)
+    if e_count == 0: return x
     return "e" * e_count + _suffix(x)
 
 # From https://github.com/cloudytheconqueror/letter-notation-format
@@ -876,7 +881,7 @@ def format(num, small=False):
     if n[0] == 1: return "-" + format(neg(n), decimals)
     if lt(n, 0.0001):
         inv = 1/tofloat(n)
-        return format(inv, decimals) + "⁻¹"
+        return "1/" + format(inv, decimals)
     elif lt(n, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(n, 1000): return regular_format(n, decimals)
     elif lt(n, 1e9): return comma_format(n)
