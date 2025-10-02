@@ -4,8 +4,8 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 6 # How many decimals (duh). Max 16
-precise_arrow = True # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
-arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number. If you use the format "format" then no more is needed than 28. (Note: This does nothing if precise_arrow = True)
+precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
+arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
 max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
@@ -652,6 +652,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     if eq(t,2) and eq(n,2): return [0, 4]
     if prec == False and r > arrow_precision and gte(n,2):
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
+        if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
     s = tofloat(n)
     if s is None:
@@ -940,7 +941,7 @@ def suffix(num, small=False):
         return regular_format([0, val], precision4) + "J" + _suffix(pol['height'])
 
 # From https://github.com/cloudytheconqueror/letter-notation-format
-def format(num, small=False):
+def format(num, decimals=decimals, small=False):
     precision2 = max(5, decimals)
     precision3 = max(4, decimals)
     precision4 = max(6, decimals)
