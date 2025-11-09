@@ -19,7 +19,7 @@ MultOnes = [
     "TePCt", "PePCt", "HePCt", "HpPct", "OcPct", "EnPct", "HCt", "MHcT", "DHcT", 
     "THCt", "TeHCt", "PeHCt", "HeHCt", "HpHct", "OcHct", "EnHct", "HpCt", "MHpcT", 
     "DHpcT", "THpCt", "TeHpCt", "PeHpCt", "HeHpCt", "HpHpct", "OcHpct", "EnHpct", 
-    "OCt", "MOcT", "DOcT", "TOCt", "TeOCt", "PeOCt", "HeOCt", "HpOct", "OcOct", 
+    "OCt", "MOcT", "DOcT", "TOCt", "TeOCt", "PeOCt", "HeOCt", "HpOct", "OcOct", def 
     "EnOct", "Ent", "MEnT", "DEnT", "TEnt", "TeEnt", "PeEnt", "HeEnt", "HpEnt", 
     "OcEnt", "EnEnt", "Hect", "MeHect"
 ]
@@ -391,9 +391,8 @@ def subtract(a,b):
     if eq(a,b): return neg(add(abs_val(a),abs_val(b)))
     if gt(a, [0, 15.954589770191003, 2]) or gt(b, [0, 15.954589770191003, 2]):
         if gt(b,a): return neg(b)
-        if gt(a,b): return neg(b)
-    if a[0] == 1 and b[0] == 1: 
-        return neg(subtract(abs_val(b), abs_val(a)))
+        if gt(a,b): return a
+    if a[0] == 1 and b[0] == 1: return neg(subtract(abs_val(b), abs_val(a)))
     if a[0] == 1 and b[0] == 0: return neg(addlayer(tofloat(log(abs_val(a))) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(abs_val(a)))))))))
     if a[0] == 0 and b[0] == 1: return add(a, abs_val(b))
     if lt(a,b):
