@@ -259,19 +259,21 @@ def minimum(a, b):
     else: return correct(b)
 # Operations
 def tofloat(a):
+    if gt(a, [0, 308.25, 1]): return None
     a = correct(a)
     val = a[1]
-    try:
-        if len(a) == 3:
-            val = 10**val
-    except: power(10,val)
+    if len(a) == 3: val = 10**val
     return -val if a[0] == 1 else val
-
+# Same thing but for numbers lower than 2^52-1
+def tofloat2(a):
+    a = correct(a)
+    if not len(a) == 2: return None
+    return -a[1] if a[0] == 1 else a[1]
+    
 def _lambertw_float(r, tol=1e-12, max_iter=100):
     if not math.isfinite(r):
         raise ValueError("lambertw: non-finite input")
-    if r < -0.3678794411714423:
-        raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
+    if r < -0.3678794411714423: raise ValueError("lambertw is unimplemented for results less than -1/e on the principal branch")
     if r == 0: return 0
     if r == 1: return 0.5671432904097839
     t = 0 if r < 10 else (math.log(r) - math.log(math.log(r)))
@@ -404,18 +406,15 @@ def tetration(a, r):
     r = correct(r)
     LOOP_CAP = 20
 
-    if lte(r, -2):
-        raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
+    if lte(r, -2): raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
 
     if eq(a, 0):
-        if eq(r, 0):
-            raise ValueError("0^^0 is undefined")
+        if eq(r, 0): raise ValueError("0^^0 is undefined")
         if _is_int_like(r): return correct(0 if int(tofloat(r)) % 2 == 0 else 1)
         raise ValueError("tetr(0, r) with non-integer r is not supported")
 
     if eq(a, 1):
-        if eq(r, -1):
-            raise ValueError("1^^(-1) is undefined")
+        if eq(r, -1): raise ValueError("1^^(-1) is undefined")
         return [0, 1]
     if gt(r,[0,1,1,MAX_SAFE_INT]) or gt(a,[0, 1,1,1,MAX_SAFE_INT]): return maximum(a,r)
     if gte(r,MAX_SAFE_INT) and lte(r,[0, 1,MAX_SAFE_INT]): return add(slog(a), r) + [1]
@@ -486,7 +485,7 @@ def tetration(a, r):
     else: f = correct(f_arr)
     return f
 def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
-    r = tofloat(correct(r))
+    r = tofloat2(correct(r))
     if eq(r, 0): return multiply(t, n)
     if eq(r, 1): return power(t, n)
     if eq(r, 2): return tetration(t, n)
@@ -495,7 +494,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
         if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
-    s = tofloat(n)
+    s = tofloat2(n)
     if s is None:
         arr_n = correct(n)
         target_len = r + 2
@@ -503,7 +502,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
         arr_res[-1] = 1
         return correct(arr_res)
 
-    s_t = tofloat(t)
+    s_t = tofloat2(t)
     if s_t is None:
         arr_t = correct(t)
         target_len = r + 1
@@ -511,13 +510,12 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
         if abs(s - round(s)) < 1e-12:
             val = max(0, int(round(s)) - 1)
             arr_res[-1] = val
-        else:
-            arr_res[-1] = 1
+        else: arr_res[-1] = 1
         return correct(arr_res)
 
     thr_r = [0, MAX_SAFE_INT, 1]
 
-    if gte(t, thr_r) or (tofloat(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
+    if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
 
     if abs(s - round(s)) < 1e-12:
         u = int(round(s))
@@ -535,8 +533,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
         try:
             if len(i) >= r:
                 idx = r
-                if idx < len(i):
-                    i[idx] = i[idx] + u
+                if idx < len(i): i[idx] = i[idx] + u
                 else:
                     i = i + [0] * (idx - len(i) + 1)
                     i[idx] = i[idx] + u
@@ -572,8 +569,8 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
 
 def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     r_correct = correct(arrows)
-    if not _is_int_like(arrows) or tofloat(r_correct) < 0: raise ValueError("arrows must be a non-negative integer-like value")
-    r = int(tofloat(r_correct))
+    if not _is_int_like(arrows) or tofloat2(r_correct) < 0: raise ValueError("arrows must be a non-negative integer-like value")
+    r = int(tofloat2(r_correct))
     t = correct(base)
     n_corr = correct(n)
     if lt(n_corr, [0, 0]): raise ValueError("n must be >= 0")
@@ -627,15 +624,9 @@ def hyper_e(x):
     arr = correct(x)
     sign = "-" if arr[0] == 1 else ""
     if len(arr) > 3:
-        last_index = len(arr) - 1
-        after = [
-            1 if v == 1 and (i + 3) != last_index else v + 1
-            for i, v in enumerate(arr[3:])
-        ]
+        after = [v + 1 for v in arr[3:]]
         arr = arr[:3] + after
-
-    return f"{sign}E{'#'.join(map(str, arr[1:]))}"
-
+    return sign + "E" + "#".join(map(str, arr[1:]))
 # Literally a straight copy from the roblox OmegaNum.lua
 def _suffix(x, suffix_decimals=decimals):
     x = correct(x)
@@ -905,4 +896,3 @@ def convert(x):
         before, after = x.split("J")
         return arrow(10,float(after)+1,float(before), prec=False)
     return correct(start_array)
-print(sub([0,102,2],[0,101,2]))
