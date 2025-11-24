@@ -35,8 +35,7 @@ def correct(x):
         s = x.strip()
         s = s.replace("1e", "e")
         if s.startswith("E") or s.startswith("-E"): return from_hyper_e(s)
-        if (s in ("}", "^", ")")) or (count_repeating(s, "e") == s.count("e")):
-            if s.count("e") != 0: return fromstring(s)
+        if any(c in "}^)" for c in s): return fromstring(s)
         return fromformat(s)
 
     if isinstance(x, list):
@@ -328,14 +327,18 @@ def abs_val(x):
     return correct([0] + x[1:])
 def add(a, b):
     a, b = correct(a), correct(b)
-    if gt(a, [0, 15.954589770191003, 2]) or gt(b, [0, 15.954589770191003, 2]): return maximum(a,b)
+    if gt(a, [0, 15.95458977019, 2]) or gt(b, [0, 15.95458977019, 2]): return maximum(a,b)
     if a[0] == 1 and b[0] == 1: return neg(add(neg(a),neg(b)))
     if a[0] == 1 and b[0] == 0: return subtract(b, neg(a))
     if a[0] == 0 and b[0] == 1: return subtract(a, neg(b))
     if len(a) == 3 or len(b) == 3:
         if (len(a) > 2 and a[2] > 1) or (len(b) > 2 and b[2] > 1): return maximum(a, b)
     if len(a) == 2 and len(b) == 2: return correct([0, tofloat(a) + tofloat(b)])
-    return addlayer(tofloat(log(a)) + tofloat(log(1 + tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
+    loga = tofloat(log(a))
+    logb = tofloat(log(b))
+    M = max(loga, logb)
+    m = min(loga, logb)
+    return addlayer(M + tofloat(log(1 + 10**(m - M))))
 
 def subtract(a,b):
     a, b = correct(a), correct(b)
@@ -871,9 +874,8 @@ def fromformat(x):
         start_array[3] = count_repeating(x)
         x = x.strip("F")
     
-    if x.startswith("e") and (x.count("e") != 1): 
-        print(1111111)
-        start_array[2] = x.count("e")
+    if x.startswith("e") and (x.count("e") != 1):
+        start_array[2] = x.count("e")-1
         x = x.strip("e")
     if 'e' in x:
         before, after = x.split("e")
@@ -903,6 +905,8 @@ def fromformat(x):
     if 'J' in x:
         before, after = x.split("J")
         return arrow(10,float(after)+1,float(before), prec=False)
+    try: start_array[1] += float(x)
+    except: pass
     return correct(start_array)
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent 2h 15min for this trash
 def fromstring(x):
