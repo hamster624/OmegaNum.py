@@ -968,3 +968,10 @@ def fromstring(x):
             array[1] = float(x[x.rfind('e')+1:])
     logic(x)
     return correct(array)
+def arrow_format(x):
+    x = correct(x)
+    if lt(x, 1e9): return format(x)
+    pol = polarize(x)
+    arrow = pol['height']+1
+    if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
+    return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
