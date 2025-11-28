@@ -305,18 +305,21 @@ def plog(x): return hyper_log(x, 3)
 def hlog(x): return hyper_log(x, 4)
 def hyper_log(x, k):
     if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
+    k = tofloat(k)
     if k < 1: raise ValueError("k must be >= 1")
     arr = correct(x)
     if arr[0] == 1: raise ValueError("Can't hyper_log a negative")
     if lte(arr, 10): return correct(_log10(arr[1]))
-    if k == 1: return correct(_log10(tofloat(arr)))
+    if k == 1: return correct(log(arr))
+    arr_len = len(arr)
     if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(_log10(tofloat(hyper_log(arr, k - 1))) + 1)
-    if len(arr) < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
-    if len(arr) == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
-    if len(arr) == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
-def addlayer(x):
+    if arr_len < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
+    if arr_len == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
+    if arr_len == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
+def addlayer(x, _add=0):
     arr = correct(x)
-    if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-arr[1])])
+    if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-(arr[1]+_add))])
+    if arr[0] == 1 and gt(abs_val(x), [0, 308, 1]): return [0, 0]
     if arr[0] == 1 and len(arr) > 2: return [0, 0]
     if len(arr) == 2: return correct([0, arr[1], 1])
     if len(arr) == 3: return correct([0, arr[1], arr[2] + 1])
@@ -367,6 +370,12 @@ def multiply(a, b):
 def divide(a, b):
     A = correct(a)
     B = correct(b)
+    if A[0] ^ B[0] == 1: return neg(divide(abs_val(A), abs_val(B)))
+    if A[0] == 1: divide(abs_val(A), abs_val(B))
+    if eq(B, 0): raise ZeroDivisionError("Can't divide with 0")
+    if gt(maximum(A,B), [0, MAX_SAFE_INT, 2]): return A if gt(A,B) else 0
+    if len(B) == 2 and len(A) == 2: return correct([0, tofloat(A) / tofloat(B)])
+    if eq(log(A),[0, 0]): return addlayer(subtract(A, log(B)), _add=1)
     result = subtract(log(A), log(B))
     return addlayer(result)
 
