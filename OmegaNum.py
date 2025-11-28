@@ -303,6 +303,7 @@ def log(x):
 def slog(x): return hyper_log(x, 2)
 def plog(x): return hyper_log(x, 3)
 def hlog(x): return hyper_log(x, 4)
+# Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
 def hyper_log(x, k):
     if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
     k = tofloat(k)
@@ -312,10 +313,13 @@ def hyper_log(x, k):
     if lte(arr, 10): return correct(_log10(arr[1]))
     if k == 1: return correct(log(arr))
     arr_len = len(arr)
-    if lte(arr, [0, 10000000000] + [8] * max(0, k - 2)): return correct(_log10(tofloat(hyper_log(arr, k - 1))) + 1)
-    if arr_len < (k + 1): return correct(_log10(tofloat(hyper_log(hyper_log(arr, k - 1), k - 1))) + 2)
+    pol = polarize(x, True)
+    start = _log10(pol['bottom']) + pol['top']
+    for i in range(k-pol["height"]-1): start = _log10(start)+1
     if arr_len == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
     if arr_len == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
+    if arr_len > (k + 2): return x
+    return correct(start)
 def addlayer(x, _add=0):
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-(arr[1]+_add))])
