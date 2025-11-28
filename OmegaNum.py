@@ -4,7 +4,7 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 6 # How many decimals (duh). Max 16
-precise_arrow = True # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
+precise_arrow = False # Makes the arrows beyond "arrow_precision" to be less precise for a large speed increase. True means it uses full precision and False makes it be less precise. (Note: This doesnt work if height is less than 2).
 arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
 max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
@@ -504,7 +504,12 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     if eq(r, 1): return power(t, n)
     if eq(r, 2): return tetration(t, n)
     if eq(t,2) and eq(n,2): return [0, 4]
-    if prec == False and r > arrow_precision and gte(n,2):
+    if prec == False and r > arrow_precision:
+        if r > 60 and lt(n,2):
+            amount=arrow(t,60,n, a_arg, True)
+            pol = polarize(amount)
+            return [0, 10000000000] + [8] * (r-(61-pol["height"])-arrow_precision)+ amount[-(arrow_precision):]
+        if r <= 60 and lt(n,2): return arrow(t, r,n,a_arg,True)
         arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
         if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
