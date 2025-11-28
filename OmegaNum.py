@@ -43,7 +43,7 @@ def correct(x):
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
-
+        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
         for i in range(1, len(arr)):
             if isinstance(arr[i], str):
                 try: arr[i] = float(arr[i])
@@ -94,7 +94,7 @@ def correct(x):
             if isinstance(a1, float) and a1.is_integer(): a1 = a1
             mid = [8] * num_eights + [a1 - 2]
             arr = arr[:2] + mid + arr[i:]
-        while len(arr) > 2 and arr[-1] == 0: arr.pop(-1)
+        
         return arr
     raise TypeError("Unsupported type for correct")
 def from_hyper_e(x):
