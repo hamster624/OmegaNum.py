@@ -4,7 +4,7 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 6 # How many decimals (duh). Max 16
-precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
+precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
 arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
 max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
@@ -139,14 +139,7 @@ def _to_pair_array(arr):
     for i in range(2, len(arr)): pairs.append([i-1, float(arr[i])])
     return pairs
 
-def polarize(array, smallTop=False, skip=False):  
-    try: array = correct(array)
-    except: pass
-    if skip == False:
-        if len(array) >= 16:
-            result = polarize(array, smallTop=smallTop, skip=True)
-            return {"bottom": result["bottom"], "top": result["top"], "height": len(array)-1}
-
+def polarize(array, smallTop=False):  
     pairs = _to_pair_array(array)
     if len(pairs) == 0:
         pairs = [[0, 0]]
@@ -224,8 +217,7 @@ def comma_format(num, precision=0):
         val = a[1]
         if precision == 0: return f"{int(round(val)):,}"
         else: return f"{val:,.{precision}f}"
-    try: return string(a)
-    except Exception: return str(a)
+    return str(a)
 
 def regular_format(num, precision):
     a = correct(num)
@@ -233,8 +225,7 @@ def regular_format(num, precision):
         val = a[1]
         if precision == 0: return f"{int(val):,}"
         else: return f"{val:.{precision}f}"
-           
-    return string(a)
+    return str(a)
 
 # End of stuff from https://github.com/cloudytheconqueror/letter-notation-format
 def _is_int_like(x):
@@ -498,7 +489,7 @@ def tetration(a, r):
         f = correct(f_arr)
     else: f = correct(f_arr)
     return f
-def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
+def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     r = tofloat2(correct(r))
     if eq(r, 0): return multiply(t, n)
     if eq(r, 1): return power(t, n)
@@ -506,16 +497,14 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     if eq(t,2) and eq(n,2): return [0, 4]
     s = tofloat2(n)
     s_t = tofloat2(t)
-    if prec == False and s != None and lt(n,2) and s_t != None:
+    if prec == False and s != None and lt(n,2) and s_t != None and done == False:
         amount = 0
-        for i in range(r):
-            if 2<s: 
-                break
+        while amount < r and s <= 2:
             amount += 1
-            s = math.pow(s_t, s-1)
-        return _arrow(s_t,r-amount,s, prec=False)
+            s = s_t ** (s - 1)
+        return _arrow(s_t,r-amount,s, prec=False, done=True)
     if prec == False and r > arrow_precision:
-        arrow_amount = _arrow(t,arrow_precision,n, a_arg, True)
+        arrow_amount = _arrow(t,arrow_precision,n, a_arg, True, done=True)
         if eq(n,2): return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision):]
         return [0, 10000000000] + [8] * (r-arrow_precision) + arrow_amount[-(arrow_precision-1):]
     if s is None:
@@ -547,7 +536,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
         fcount = 0
         limit = thr_r
         while u != 0 and lt(i, limit) and fcount < 100:
-            i = _arrow(t, r - 1, i, a_arg + 1, True)
+            i = _arrow(t, r - 1, i, a_arg + 1, True, done=True)
             u -= 1
             fcount += 1
         if fcount == 100:
@@ -565,7 +554,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
 
     u = math.floor(s)
     frac = s - u
-    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True)
+    if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True, done=True)
     else:
         i = t
         if u > 0: u -= 1
@@ -573,7 +562,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow):
     limit = thr_r
     while u != 0 and lt(i, limit) and fcount < 100:
         if u > 0:
-            i = _arrow(t, r - 1, i, a_arg + 1)
+            i = _arrow(t, r - 1, i, a_arg + 1, done=True)
             u -= 1
         else: break
         fcount += 1
