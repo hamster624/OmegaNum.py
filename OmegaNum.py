@@ -26,10 +26,12 @@ MultOnes = [
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
-_log10 = math.log10
+def log5(x): return math.log(x,5)
+_log10 = log5
+
 # You can ignore these, these are only to help the code.
-def correct(x):
-    if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)])
+def correct(x, base3=10):
+    if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)], base3)
 
     if isinstance(x, str):
         s = x.strip()
@@ -55,7 +57,7 @@ def correct(x):
             changed = False
             for i in range(len(arr)-1, 0, -1):
                 if arr[i] > MAX_SAFE_INT:
-                    L = _log10(arr[i])
+                    L = math.log(arr[i], base3)
                     if i == 1:
                         arr[1] = L
                         if len(arr) > 2: arr[2] += 1
@@ -139,7 +141,7 @@ def _to_pair_array(arr):
     for i in range(2, len(arr)): pairs.append([i-1, float(arr[i])])
     return pairs
 
-def polarize(array, smallTop=False):  
+def polarize(array, smallTop=False, base=10):  
     pairs = _to_pair_array(array)
     if len(pairs) == 0:
         pairs = [[0, 0]]
@@ -151,7 +153,7 @@ def polarize(array, smallTop=False):
     if len(pairs) <= 1 and pairs[0][0] == 0:
         if smallTop:
             while bottom >= 10:
-                bottom = _log10(bottom)
+                bottom = math.log(bottom,base)
                 top += 1
                 height = 1
     else:
@@ -162,20 +164,20 @@ def polarize(array, smallTop=False):
         while (bottom >= 10) or (elem < len(pairs)) or (smallTop and top >= 10):
             if bottom >= 10:
                 if height == 1:
-                    bottom = _log10(bottom)
+                    bottom = math.log(bottom,base)
                     if bottom >= 10:
-                        bottom = _log10(bottom)
+                        bottom = math.log(bottom,base)
                         top += 1
                 elif height < MAX_LOGP1_REPEATS:
-                    if bottom >= 1e10: bottom = _log10(_log10(_log10(bottom))) + 2
-                    else: bottom = _log10(_log10(bottom)) + 1
+                    if bottom >= 1e10: bottom = math.log(math.log(math.log(bottom,base),base),base) + 2
+                    else: bottom = math.log(math.log(bottom,base),base) + 1
                     for _i in range(2, height):
-                        bottom = _log10(bottom) + 1
+                        bottom = math.log(bottom,base) + 1
                 else: bottom = 1
                 top += 1
             else:
                 if elem == len(pairs) - 1 and pairs[elem][0] == height and not (smallTop and top >= 10): break
-                bottom = _log10(bottom) + top
+                bottom = math.log(bottom,base) + top
                 height += 1
                 if elem < len(pairs) and height > pairs[elem][0]: elem += 1
                 if elem < len(pairs):
@@ -185,7 +187,7 @@ def polarize(array, smallTop=False):
                         diff = pairs[elem][0] - height
                         if diff < MAX_LOGP1_REPEATS:
                             for _ in range(diff):
-                                bottom = _log10(bottom) + 1
+                                bottom = math.log(bottom,base) + 1
                         else: bottom = 1
                         top = pairs[elem][1] + 1
                     else: top = 1
@@ -291,24 +293,27 @@ def log(x):
     if len(arr) > 3: return correct(arr)
     return correct(arr)
 
-def slog(x): return hyper_log(x, 2)
-def plog(x): return hyper_log(x, 3)
-def hlog(x): return hyper_log(x, 4)
+def slog(x, base): return hyper_log(x, base, 2)
+def plog(x, base): return hyper_log(x, base, 3)
+def hlog(x, base): return hyper_log(x, base, 4)
 # Optimized to oblivion but now i barely understand what i did here. On a lenght of 100 elements array with random ints previous version took 0.0925163 seconds while now its only 0.0004117 seconds or on 1000 lenght its 25.8783556 seconds to 0.0015992 seconds so readable code != speed
-def hyper_log(x, k):
+def hyper_log(x, base2=10, k=1):
+    x = correct(x, base2)
+    base2 = tofloat(correct(base2))
+    if base2 == None: base2 = 10
+    if base2 <= 1: raise ValueError("Undefined for base being under or equal to 1")
     if not _is_int_like(k) or tofloat(k) < 0: raise ValueError("hyper_log height must be a non-negative integer-like value")
     k = tofloat(k)
     if k < 1: raise ValueError("k must be >= 1")
-    arr = correct(x)
-    if arr[0] == 1: raise ValueError("Can't hyper_log a negative")
-    if lte(arr, 10): return correct(_log10(arr[1]))
-    if k == 1: return log(arr)
-    arr_len = len(arr)
-    pol = polarize(x, True)
-    start = _log10(pol['bottom']) + pol['top']
-    for i in range(k-pol["height"]-1): start = _log10(start)+1
-    if arr_len == (k + 1): return correct(tofloat(hyper_log(arr[:k], k)) + arr[k])
-    if arr_len == (k + 2): return correct([0] + arr[1:(k + 1)] + [arr[k + 1] - 1])
+    if x[0] == 1: raise ValueError("Can't hyper_log a negative")
+    if lte(x, 10): return correct(math.log(x[1], base2))
+    if k == 1: return logbase(x, base2)
+    arr_len = len(x)
+    pol = polarize(x, True, base=base2)
+    start = math.log(pol['bottom'],base2) + pol['top']
+    for i in range(k-pol["height"]-1): start = math.log(start,base2)+1
+    if arr_len == (k + 1): return correct(tofloat(hyper_log(x[:k], base2, k)) + x[k])
+    if arr_len == (k + 2): return correct([0] + x[1:(k+1)] + [x[k + 1] - 1])
     if arr_len > (k + 2): return x
     return correct(start)
 def addlayer(x, _add=0):
@@ -567,7 +572,9 @@ def heptation(a,b): return arrow(a,5,b)
 def octation(a,b): return arrow(a,6,b)
 def nonation(a,b): return arrow(a,7,b)
 def decation(a,b): return arrow(a,8,b)
-def logbase(a,b): return divide(log(a),log(b))
+def logbase(a,b):
+    if lte(b, 1): raise ValueError("LogBase undefined for bases under or equal to 1")
+    return divide(log(a),log(b))
 def ln(a): return divide(log(a),0.4342944819032518) # log10(a)/log10(e)
 def sqrt(a): return root(a,2)
 def root(a,b): 
