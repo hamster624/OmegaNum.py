@@ -527,31 +527,6 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     thr_r = [0, MAX_SAFE_INT, 1]
 
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
-
-    if abs(s - round(s)) < 1e-12:
-        u = int(round(s))
-        if u <= 0: return [0, 1]
-        i = t
-        u -= 1
-        fcount = 0
-        limit = thr_r
-        while u != 0 and lt(i, limit) and fcount < 100:
-            i = _arrow(t, r - 1, i, a_arg + 1, True, done=True)
-            u -= 1
-            fcount += 1
-        if fcount == 100:
-            return correct([[0, 10], [r, 1]])
-        try:
-            if len(i) >= r:
-                idx = r
-                if idx < len(i): i[idx] = i[idx] + u
-                else:
-                    i = i + [0] * (idx - len(i) + 1)
-                    i[idx] = i[idx] + u
-                return i
-        except Exception: pass
-        return correct(i)
-
     u = math.floor(s)
     frac = s - u
     if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True, done=True)
@@ -569,8 +544,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     try:
         if len(i) >= r:
             idx = r
-            if idx < len(i):
-                i[idx] = i[idx] + u
+            if idx < len(i): i[idx] = i[idx] + u
             else:
                 i = i + [0] * (idx - len(i) + 1)
                 i[idx] = i[idx] + u
@@ -585,7 +559,6 @@ def arrow(base, arrows, n, a_arg=0, prec=precise_arrow):
     t = correct(base)
     n_corr = correct(n)
     if lt(n_corr, [0, 0]): raise ValueError("n must be >= 0")
-
     res = _arrow(t, r, n_corr, a_arg, prec)
     return correct(res)
 def pentation(a,b): return arrow(a,3,b)
