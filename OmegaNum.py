@@ -120,8 +120,7 @@ def compare(a, b):
     for i in range(1, min_len + 1):
         Ai = A[-i]
         Bi = B[-i]
-        if Ai != Bi:
-            return sign * (1 if Ai > Bi else -1)
+        if Ai != Bi: return sign * (1 if Ai > Bi else -1)
     if lenA != lenB: return sign * (1 if lenA > lenB else -1)
     return 0
 
@@ -342,14 +341,15 @@ def hyper_log(x, base2=10, k=1):
     if arr_len == (k + 2): return correct([0] + x[1:(k+1)] + [x[k + 1] - 1])
     if arr_len > (k + 2): return x
     return correct(start)
-def addlayer(x, _add=0):
+def addlayer(x, layers=1,_add=0):
+    if x == "Infinity": return "Infinity"
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-(arr[1]+_add))])
     if arr[0] == 1 and gt(abs_val(x), [0, 308, 1]): return [0, 0]
     if arr[0] == 1 and len(arr) > 2: return [0, 0]
     if len(arr) == 2: return correct([0, arr[1], 1])
-    if len(arr) == 3: return correct([0, arr[1], arr[2] + 1])
-    if len(arr) > 3: return arr
+    if len(arr) == 3: return correct([0, arr[1], arr[2] + layers])
+    if len(arr) > 3: return "Infinity"
     return arr
 def abs_val(x): 
     x=correct(x)
@@ -440,8 +440,6 @@ def gamma(x):
 def tetration(a, r):
     a = correct(a)
     r = correct(r)
-    LOOP_CAP = 20
-
     if lte(r, -2): raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
 
     if eq(a, 0):
@@ -461,9 +459,6 @@ def tetration(a, r):
     if eq(r, 0): return [0, 1]
     if eq(r, 1): return a
     if eq(r, 2): return power(a, a)
-    if eq(a, 2):
-        if eq(r, 3): return [0, 16]
-        if eq(r, 4): return [0, 65536]
     if lt(a, 1.444667861009766):
         n = neg(ln(a))
         return divide(lambertw(n), n)
@@ -476,50 +471,22 @@ def tetration(a, r):
         except Exception:
             pass
         raise ValueError("tetr(a, r): r is too large for iterative evaluation in this simplified implementation")
-
-    u = int(s)
-    frac = s - u
-    if frac > 1e-15: f = power(a, frac)
-       
-    else:
-        f = a
-        if u > 0: u -= 1
-    last = None
-    h = 0
-
-    c = [0, 308, 1]
-    if  LOOP_CAP > h:
-        while u != 0 and lt(f, c) and h < LOOP_CAP:
-            if u > 0:
-                f_next = power(a, f)
-                if last is not None and eq(f_next, last):
-                    u = 0
-                    break
-                last = f_next
-                f = f_next
-                u -= 1
-            else:
-                f_next = logbase(f, a)
-                if last is not None and eq(f_next, last):
-                    u = 0
-                    break
-                last = f_next
-                f = f_next
-                u += 1
-            h += 1
-
-    if h == LOOP_CAP or lt(a, 1.444667861009766): u = 0
-
-    f_arr = correct(f)
-    if u != 0:
-        if len(f_arr) == 2: f_arr = [f_arr[0], f_arr[1], u]
-        else:
-            while len(f_arr) < 3:
-                f_arr.append(0)
-            f_arr[2] = f_arr[2] + u
-        f = correct(f_arr)
-    else: f = correct(f_arr)
-    return f
+    x1 = tofloat(a)
+    if x1 == None:
+        y_floor = math.floor(s)
+        frac = s-y_floor
+        return addlayer(multiply(power(a, frac), log(a)),y_floor)
+    y_floor = math.floor(s)
+    frac = s-y_floor
+    end = math.exp(frac * math.log(x1)) if frac != 0 else 1.0
+    skip = 0
+    try:
+        while y_floor > 0 and skip != 1000:
+            end = x1**end
+            y_floor -= 1
+            skip += 1
+    except OverflowError: end *= math.log10(x1)
+    return correct([0, end, y_floor])
 def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     r = tofloat2(correct(r))
     if eq(r, 0): return multiply(t, n)
@@ -601,11 +568,12 @@ def decation(a,b): return arrow(a,8,b)
 def logbase(a,b):
     if lte(b, 1): raise ValueError("LogBase undefined for bases under or equal to 1")
     return divide(log(a),log(b))
-def ln(a): return divide(log(a),0.4342944819032518) # log10(a)/log10(e)
+def ln(a): return multiply(log(a),2.302585092994046) # log10(a)/log10(e) or log10(a)*(1/log10(e))
 def sqrt(a): return root(a,2)
 def root(a,b): 
     if lt(b,0): raise ValueError("Can't root a negative")
     if gt(b,0) and lt(b,1): return power(a,divide(1,b))
+    if eq(b, 0): raise ValueError("Root of 0 is undefined")
     return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 # Short names
