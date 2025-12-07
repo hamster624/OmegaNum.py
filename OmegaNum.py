@@ -342,14 +342,13 @@ def hyper_log(x, base2=10, k=1):
     if arr_len > (k + 2): return x
     return correct(start)
 def addlayer(x, layers=1,_add=0):
-    if x == "Infinity": return "Infinity"
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-(arr[1]+_add))])
     if arr[0] == 1 and gt(abs_val(x), [0, 308, 1]): return [0, 0]
     if arr[0] == 1 and len(arr) > 2: return [0, 0]
     if len(arr) == 2: return correct([0, arr[1], 1])
     if len(arr) == 3: return correct([0, arr[1], arr[2] + layers])
-    if len(arr) > 3: return "Infinity"
+    if len(arr) > 3: return arr
     return arr
 def abs_val(x): 
     x=correct(x)
