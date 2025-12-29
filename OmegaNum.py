@@ -5,7 +5,7 @@ import math
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
 precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
-arrow_precision = 28 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
+arrow_precision = 44 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
 max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
@@ -91,10 +91,10 @@ def correct(x, base3=10):
             if i == len(arr): arr.append(1)
             if arr[i] == 0: arr[i] = 0
             else: arr[i] -= 1
-            num_nine = 1 if z == 2 else z
+            num_eight = 1 if z == 2 else z
             a1 = arr[1]
             if isinstance(a1, float) and a1.is_integer(): a1 = a1
-            mid = [9] * num_nine
+            mid = [8] * num_eight
             arr = correct(arr[:2] + mid + arr[i:])
 
         return arr
@@ -125,40 +125,28 @@ def compare(a, b):
     return 0
 
 def neg(x):
-    correct(x)
-    x[0] = int(not x[0])
+    x = correct(x)
+    x[0] = 1-x[0]
     return x
 
 # Everything after this is from https://github.com/cloudytheconqueror/letter-notation-format
-def _to_pair_array(arr):
-    if not arr: return [[0, 0]]
-    if isinstance(arr[0], (list, tuple)) and len(arr[0]) == 2: return [[int(h), float(v)] for h, v in arr]
-    if not isinstance(arr, (list, tuple)): raise TypeError("polarize: unsupported array type")
-    if len(arr) == 1: return [[0, float(arr[0])]]
-    base_val = float(arr[1])
-    pairs = [[0, base_val]]
-    for i in range(2, len(arr)): pairs.append([i-1, float(arr[i])])
-    return pairs
-
 def polarize(array, smallTop=False, base=10):  
-    pairs = _to_pair_array(array)
-    if len(pairs) == 0:
-        pairs = [[0, 0]]
-
-    bottom = pairs[0][1] if pairs[0][0] == 0 else 10
+    pairs = correct(array)
+    pairs = pairs[1:]
+    bottom = pairs[0]
     top = 0
     height = 0
 
-    if len(pairs) <= 1 and pairs[0][0] == 0:
+    if len(pairs) <= 1:
         if smallTop:
             while bottom >= 10:
                 bottom = math.log(bottom,base)
                 top += 1
                 height = 1
     else:
-        elem = 1 if pairs[0][0] == 0 else 0
-        top = pairs[elem][1]
-        height = int(pairs[elem][0])
+        elem = 1
+        top = pairs[1]
+        height = 1
 
         while (bottom >= 10) or (elem < len(pairs)) or (smallTop and top >= 10):
             if bottom >= 10:
@@ -175,43 +163,25 @@ def polarize(array, smallTop=False, base=10):
                 else: bottom = 1
                 top += 1
             else:
-                if elem == len(pairs) - 1 and pairs[elem][0] == height and not (smallTop and top >= 10): break
+                if elem == len(pairs) - 1 and elem == height and not (smallTop and top >= 10): break
                 bottom = math.log(bottom,base) + top
                 height += 1
-                if elem < len(pairs) and height > pairs[elem][0]: elem += 1
+                if elem < len(pairs) and height > elem: elem += 1
                 if elem < len(pairs):
-                    if height == pairs[elem][0]:
-                        top = pairs[elem][1] + 1
+                    if height == elem: top = pairs[elem] + 1
                     elif bottom < 10:
-                        diff = pairs[elem][0] - height
+                        diff = elem - height
                         if diff < MAX_LOGP1_REPEATS:
                             for _ in range(diff):
                                 bottom = math.log(bottom,base) + 1
                         else: bottom = 1
-                        top = pairs[elem][1] + 1
+                        top = pairs[elem] + 1
                     else: top = 1
                 else: top = 1
     return {"bottom": bottom, "top": top, "height": height}
-
-def array_search(arr, height):
-    pairs = _to_pair_array(arr)
-    for h, v in pairs:
-        if h == height: return v
-        if h > height: break
-    return 0 if height > 0 else 10
-
-def set_to_zero(arr, height):
-    if isinstance(arr, list) and arr and isinstance(arr[0], (list, tuple)) and len(arr[0]) == 2:
-        for p in arr:
-            if p[0] == height:
-                p[1] = 0
-                return arr
-        return arr
-    a = correct(arr)
-    idx = height + 1
-    if idx < len(a): a[idx] = 0
-    return a
-
+def set_to_zero(x, y):
+    x[y] = 0
+    return x
 def comma_format(num, precision=0):
     a = correct(num)
     if len(a) == 2:
@@ -344,8 +314,7 @@ def hyper_log(x, base2=10, k=1):
 def addlayer(x, layers=1,_add=0):
     arr = correct(x)
     if arr[0] == 1 and len(arr) == 2: return correct([0, 10**(-(arr[1]+_add))])
-    if arr[0] == 1 and gt(abs_val(x), [0, 308, 1]): return [0, 0]
-    if arr[0] == 1 and len(arr) > 2: return [0, 0]
+    if arr[0] == 1 and gt(abs_val(x), [[0, 308, 1], 0, 0]): return [0, 0]
     if len(arr) == 2: return correct([0, arr[1], 1])
     if len(arr) == 3: return correct([0, arr[1], arr[2] + layers])
     if len(arr) > 3: return arr
@@ -386,6 +355,7 @@ def multiply(a, b):
     A = correct(a)
     B = correct(b)
     result_sign = A[0] ^ B[0]
+    if gt(A, [0, MAX_SAFE_INT, 1]): return A
     if len(A) == 2 and len(B) == 2:
         val = (A[1] if A[0] == 0 else -A[1]) * (B[1] if B[0] == 0 else -B[1])
         return correct([0 if val >= 0 else 1, abs(val)])
@@ -400,7 +370,6 @@ def divide(a, b):
     if eq(B, 0): raise ZeroDivisionError("Can't divide with 0")
     if gt(maximum(A,B), [0, MAX_SAFE_INT, 2]): return A if gt(A,B) else 0
     if len(B) == 2 and len(A) == 2: return correct([0, tofloat(A) / tofloat(B)])
-    if eq(log(A),[0, 0]): return addlayer(subtract(A, log(B)), _add=1)
     result = subtract(log(A), log(B))
     return addlayer(result)
 
@@ -432,8 +401,8 @@ def ceil(x):
     else: return x
 
 def gamma(x):
-	x = correct(x)
-	return factorial(sub(x,1))
+    x = correct(x)
+    return factorial(sub(x,1))
 
 # From ExpantaNum.js
 def tetration(a, r):
@@ -484,7 +453,7 @@ def tetration(a, r):
             end = x1**end
             y_floor -= 1
             skip += 1
-    except OverflowError: end *= math.log10(x1)
+    except OverflowError: end *= _log10(x1)
     return correct([0, end, y_floor])
 def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
     r = tofloat2(correct(r))
@@ -700,8 +669,8 @@ def suffix(num, small=False):
     elif lt(n, [0, max_suffix, 1]): return _suffix(n)
        
     elif lt(n, [0, max_suffix, 2]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -710,8 +679,8 @@ def suffix(num, small=False):
         p = precision2
         return regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(n, [0, max_suffix, 3]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -720,8 +689,8 @@ def suffix(num, small=False):
         p = precision2
         return "e" + regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(n, [0, 10000000000, 3]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -732,31 +701,31 @@ def suffix(num, small=False):
     pol = polarize(n)
     if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
     elif lt(n, [0, 10000000000, 8, 3]):
-        rep = array_search(n, 2)
+        rep = n[3]
         if rep >= 1:
-            n_arr = set_to_zero(n, 2)
+            n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + suffix(n_arr, decimals)
-        n_val = array_search(n, 1) + 1
+        n_val = n[2] + 1
         if gte(n, [0, 10, n_val]):
             n_val += 1
         return "F" + format(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
     elif lt(n, [0, 10000000000, 8, 8, 3]):
-        rep = array_search(n, 3)
+        rep = n[4]
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + suffix(n_arr, decimals)
-        n_val = array_search(n, 2) + 1
+        n_val = n[3] + 1
         if gte(n, [0, 10, 0, n_val]):
             n_val += 1
         return "G" + suffix(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + _suffix(pol['top'], 0)
     elif lt(n, [0, 10000000000, 8, 8, 8, 3]):
-        rep = array_search(n, 4)
+        rep = n[5]
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + suffix(n_arr, decimals)
-        n_val = array_search(n, 3) + 1
+        n_val = n[4] + 1
         if gte(n, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + suffix(n_val, decimals)
@@ -780,8 +749,8 @@ def format(num, decimals=decimals, small=False):
     elif lt(n, 1000): return regular_format(n, decimals)
     elif lt(n, 1e9): return comma_format(n)
     elif lt(n, [0, 10000000000, 3]):
-        bottom = array_search(n, 0)
-        rep = array_search(n, 1) - 1
+        bottom = n[1]
+        rep = n[2] - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
@@ -792,31 +761,31 @@ def format(num, decimals=decimals, small=False):
     pol = polarize(n)
     if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 3]):
-        rep = array_search(n, 2)
+        rep = n[3]
         if rep >= 1:
-            n_arr = set_to_zero(n, 2)
+            n_arr = set_to_zero(n, 3)
             return ("F" * int(rep)) + format(n_arr, decimals)
-        n_val = array_search(n, 1) + 1
+        n_val = n[2] + 1
         if gte(n, [0, 10, n_val]):
             n_val += 1
         return "F" + format(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 8, 3]):
-        rep = array_search(n, 3)
+        rep = n[4]
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 4)
             return ("G" * int(rep)) + format(n_arr, decimals)
-        n_val = array_search(n, 2) + 1
+        n_val = n[3] + 1
         if gte(n, [0, 10, 0, n_val]):
             n_val += 1
         return "G" + format(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 8, 8, 3]):
-        rep = array_search(n, 4)
+        rep = n[5]
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 5)
             return ("H" * int(rep)) + format(n_arr, decimals)
-        n_val = array_search(n, 3) + 1
+        n_val = n[4] + 1
         if gte(n, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + format(n_val, decimals)
@@ -825,17 +794,12 @@ def format(num, decimals=decimals, small=False):
         val = _log10(pol['bottom']) + pol['top']
         return regular_format([0, val], precision4) + "J" + comma_format(pol['height'])
 def count_repeating(s, target=None):
-    if not s:
-        return 0
-    if target is None:
-        target = s[0]
-    
+    if not s: return 0
+    if target is None: target = s[0]
     count = 0
     for ch in s:
-        if ch == target:
-            count += 1
-        else:
-            break
+        if ch == target: count += 1
+        else: break
     return count
 
 def fromformat(x):
@@ -908,7 +872,7 @@ def fromstring(x):
         size = x.strip("10")
         size = count_repeating(size)
     if x.startswith("e"): size = 1
-    array = [0] * (size+2)
+    array = [0] * (size+3)
     if x.startswith("-"): 
         array[0] = 1
         x = x.strip("-")
