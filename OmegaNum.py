@@ -131,8 +131,7 @@ def neg(x):
 
 # Everything after this is from https://github.com/cloudytheconqueror/letter-notation-format
 def polarize(array, smallTop=False, base=10):  
-    pairs = correct(array)
-    pairs = pairs[1:]
+    pairs = correct(array)[1:]
     bottom = pairs[0]
     top = 0
     height = 0
@@ -665,9 +664,8 @@ def suffix(num, small=False):
         return "1/" + _suffix(inv)
     elif lt(n, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(n, 1000): return regular_format(n, decimals)
-    elif lt(n, 1e9): return _suffix(n)
+    elif lt(n, MAX_SAFE_INT): return _suffix(n)
     elif lt(n, [0, max_suffix, 1]): return _suffix(n)
-       
     elif lt(n, [0, max_suffix, 2]):
         bottom = n[1]
         rep = n[2] - 1
@@ -708,7 +706,7 @@ def suffix(num, small=False):
         n_val = n[2] + 1
         if gte(n, [0, 10, n_val]):
             n_val += 1
-        return "F" + format(n_val, decimals)
+        return "F" + suffix(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + _suffix(pol['top'], 0)
     elif lt(n, [0, 10000000000, 8, 8, 3]):
         rep = n[4]
@@ -747,7 +745,7 @@ def format(num, decimals=decimals, small=False):
         return "1/" + format(inv, decimals)
     elif lt(n, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(n, 1000): return regular_format(n, decimals)
-    elif lt(n, 1e9): return comma_format(n)
+    elif lt(n, MAX_SAFE_INT): return comma_format(n)
     elif lt(n, [0, 10000000000, 3]):
         bottom = n[1]
         rep = n[2] - 1
