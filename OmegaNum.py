@@ -181,6 +181,9 @@ def polarize(array, smallTop=False, base=10):
 def set_to_zero(x, y):
     x[y] = 0
     return x
+def array_search(x, y):
+    if len(x) <= y: return 0
+    return x[y]
 def comma_format(num, precision=0):
     a = correct(num)
     if len(a) == 2:
@@ -391,7 +394,7 @@ def factorial(n):
 
 def floor(x):
     x = correct(x)
-    if len(x) == 2: return correct(str(math.floor(x[1])).strip("+"))
+    if len(x) == 2: return correct(str(int(x[1])).strip("+"))
     else: return x
 
 def ceil(x):
@@ -440,10 +443,10 @@ def tetration(a, r):
         raise ValueError("tetr(a, r): r is too large for iterative evaluation in this simplified implementation")
     x1 = tofloat(a)
     if x1 == None:
-        y_floor = math.floor(s)
+        y_floor = int(s)
         frac = s-y_floor
         return addlayer(multiply(power(a, frac), log(a)),y_floor)
-    y_floor = math.floor(s)
+    y_floor = int(s)
     frac = s-y_floor
     end = math.exp(frac * math.log(x1)) if frac != 0 else 1.0
     skip = 0
@@ -491,7 +494,7 @@ def _arrow(t, r, n, a_arg=0, prec=precise_arrow, done=False):
 
     thr_r = [0, MAX_SAFE_INT, 1]
     if gte(t, thr_r) or (tofloat2(n) is None and gt(n, [0, MAX_SAFE_INT])): return maximum(t, n)
-    u = math.floor(s)
+    u = int(s)
     frac = s - u
     if frac > 1e-15: i = _arrow(t, r - 1, frac, a_arg + 1, True, done=True)
     else:
@@ -589,7 +592,7 @@ def _suffix(x, suffix_decimals=decimals):
         if num_val < 1000: 
             val = round(num_val, suffix_decimals)
             return str(int(val) if val == int(val) else val)
-        exponent = math.floor(_log10(num_val))
+        exponent = int(_log10(num_val))
         mantissa = num_val / (10 ** exponent)
         SNumber = exponent
         SNumber1 = mantissa
@@ -598,7 +601,7 @@ def _suffix(x, suffix_decimals=decimals):
         SNumber1 = 1
 
     leftover = SNumber % 3
-    SNumber = math.floor(SNumber / 3) - 1
+    SNumber = int(SNumber / 3) - 1
 
     def format_with_suffix(val, suffix):
         val_rounded = round(val, suffix_decimals)
@@ -618,9 +621,9 @@ def _suffix(x, suffix_decimals=decimals):
     txt = ""
     def suffixpart(n):
         nonlocal txt
-        Hundreds = math.floor(n / 100)
+        Hundreds = int(n / 100)
         n = n % 100
-        Tens = math.floor(n / 10)
+        Tens = int(n / 10)
         Ones = n % 10
         txt += FirstOnes[Ones]
         txt += SecondOnes[Tens]
@@ -630,9 +633,9 @@ def _suffix(x, suffix_decimals=decimals):
         nonlocal txt
         if n > 0: n += 1
         if n > 1000: n = n % 1000
-        Hundreds = math.floor(n / 100)
+        Hundreds = int(n / 100)
         n = n % 100
-        Tens = math.floor(n / 10)
+        Tens = int(n / 10)
         Ones = n % 10
         txt += FirstOnes[Ones]
         txt += SecondOnes[Tens]
@@ -645,7 +648,7 @@ def _suffix(x, suffix_decimals=decimals):
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
         if SNumber >= power_val:
-            part_val = math.floor(SNumber / power_val)
+            part_val = int(SNumber / power_val)
             suffixpart2(part_val - 1)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
@@ -671,8 +674,8 @@ def suffix(num, small=False):
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
-        m = 10 ** (bottom - math.floor(bottom))
-        e = math.floor(bottom)
+        m = 10 ** (bottom - int(bottom))
+        e = int(bottom)
         p = precision2
         return regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(n, [0, max_suffix, 3]):
@@ -681,8 +684,8 @@ def suffix(num, small=False):
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
-        m = 10 ** (bottom - math.floor(bottom))
-        e = math.floor(bottom)
+        m = 10 ** (bottom - int(bottom))
+        e = int(bottom)
         p = precision2
         return "e" + regular_format([0, m], p) + "e" + _suffix(e)
     elif lt(n, [0, 10000000000, 3]):
@@ -691,8 +694,8 @@ def suffix(num, small=False):
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
-        m = 10 ** (bottom - math.floor(bottom))
-        e = math.floor(bottom)
+        m = 10 ** (bottom - int(bottom))
+        e = int(bottom)
         p = precision2
         return "ee" + regular_format([0, m], p) + "e" + _suffix(e)
     pol = polarize(n)
@@ -744,45 +747,45 @@ def format(num, decimals=decimals, small=False):
         return "1/" + format(inv, decimals)
     elif lt(n, 1): return regular_format(n, decimals + (2 if small else 0))
     elif lt(n, 1000): return regular_format(n, decimals)
-    elif lt(n, MAX_SAFE_INT): return comma_format(n)
+    elif lt(n, 1e9): return comma_format(n)
     elif lt(n, [0, 10000000000, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
+        bottom = array_search(n, 1)
+        rep = array_search(n, 2) - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
-        m = 10 ** (bottom - math.floor(bottom))
-        e = math.floor(bottom)
+        m = 10 ** (bottom - int(bottom))
+        e = int(bottom)
         p = precision2 if bottom < 1_000_000 else 2
         return ("e" * int(rep)) + regular_format([0, m], p) + "e" + comma_format(e)
     pol = polarize(n)
     if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 3]):
-        rep = n[3]
+        rep = array_search(n, 3)
         if rep >= 1:
-            n_arr = set_to_zero(n, 3)
+            n_arr = set_to_zero(n, 2)
             return ("F" * int(rep)) + format(n_arr, decimals)
-        n_val = n[2] + 1
+        n_val = array_search(n, 2) + 1
         if gte(n, [0, 10, n_val]):
             n_val += 1
         return "F" + format(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "G" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 8, 3]):
-        rep = n[4]
+        rep = array_search(n, 4)
         if rep >= 1:
-            n_arr = set_to_zero(n, 4)
+            n_arr = set_to_zero(n, 3)
             return ("G" * int(rep)) + format(n_arr, decimals)
-        n_val = n[3] + 1
+        n_val = array_search(n, 3) + 1
         if gte(n, [0, 10, 0, n_val]):
             n_val += 1
         return "G" + format(n_val, decimals)
     elif lt(n, [0, 10000000000, 8, 8, 999998]): return regular_format([0, pol['bottom']], precision3) + "H" + comma_format(pol['top'])
     elif lt(n, [0, 10000000000, 8, 8, 8, 3]):
-        rep = n[5]
+        rep = array_search(n, 5)
         if rep >= 1:
-            n_arr = set_to_zero(n, 5)
+            n_arr = set_to_zero(n, 4)
             return ("H" * int(rep)) + format(n_arr, decimals)
-        n_val = n[4] + 1
+        n_val = array_search(n, 4) + 1
         if gte(n, [0, 10, 0, 0, n_val]):
             n_val += 1
         return "H" + format(n_val, decimals)
