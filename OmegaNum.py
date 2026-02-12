@@ -277,6 +277,7 @@ def hyper_log(x, base2=10, k=1):
     k = tofloat(k)
     if k < 1: raise ValueError("k must be >= 1")
     if x[0] == 1: raise ValueError("Can't hyper_log a negative")
+    print(4848)
     if k == 1: return logbase(x, base2)
     if base2 == None or gt(base4,10):
         if gt(maximum(base4, y), [0, 10000000000, 9007199254740989]):
@@ -405,7 +406,6 @@ def ceil(x):
 def gamma(x):
     x = correct(x)
     if x[0] == 1: raise ValueError("Can't factorial a negative")
-    if gt(x, [0, MAX_SAFE_INT, 2]): return x
     if gt(x, [0, 15.954589770191003, 1]): return exp(x)
     if gte(x, MAX_SAFE_INT): return exp(multiply(x, subtract(ln(x), 1)))
     n = tofloat2(x)
