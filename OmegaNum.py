@@ -11,17 +11,17 @@ FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
 MultOnes = [
-    "", "Mi", "Mc", "Na", "Pi", "Fm", "At", "Zp", "Yc", "Xo", "Ve", "Me", "Due", 
-    "Tre", "Te", "Pt", "He", "Hp", "Oct", "En", "Ic", "Mei", "Dui", "Tri", "Teti", 
-    "Pti", "Hei", "Hp", "Oci", "Eni", "Tra", "TeC", "MTc", "DTc", "TrTc", "TeTc", 
-    "PeTc", "HTc", "HpT", "OcT", "EnT", "TetC", "MTetc", "DTetc", "TrTetc", "TeTetc", 
-    "PeTetc", "HTetc", "HpTetc", "OcTetc", "EnTetc", "PcT", "MPcT", "DPcT", "TPCt", 
-    "TePCt", "PePCt", "HePCt", "HpPct", "OcPct", "EnPct", "HCt", "MHcT", "DHcT", 
-    "THCt", "TeHCt", "PeHCt", "HeHCt", "HpHct", "OcHct", "EnHct", "HpCt", "MHpcT", 
-    "DHpcT", "THpCt", "TeHpCt", "PeHpCt", "HeHpCt", "HpHpct", "OcHpct", "EnHpct", 
-    "OCt", "MOcT", "DOcT", "TOCt", "TeOCt", "PeOCt", "HeOCt", "HpOct", "OcOct", 
-    "EnOct", "Ent", "MEnT", "DEnT", "TEnt", "TeEnt", "PeEnt", "HeEnt", "HpEnt", 
-    "OcEnt", "EnEnt", "Hect", "MeHect"
+    "", "Mi-", "Mc-", "Na-", "Pi-", "Fm-", "At-", "Zp-", "Yc-", "Xo-", "Ve-", "Me-", "Due-",
+    "Tre-", "Te-", "Pt-", "He-", "Hp-", "Oct-", "En-", "Ic-", "Mei-", "Dui-", "Tri-", "Teti-",
+    "Pti-", "Hei-", "Hp-", "Oci-", "Eni-", "Tra-", "TeC-", "MTc-", "DTc-", "TrTc-", "TeTc-",
+    "PeTc-", "HTc-", "HpT-", "OcT-", "EnT-", "TetC-", "MTetc-", "DTetc-", "TrTetc-", "TeTetc-",
+    "PeTetc-", "HTetc-", "HpTetc-", "OcTetc-", "EnTetc-", "PcT-", "MPcT-", "DPcT-", "TPCt-",
+    "TePCt-", "PePCt-", "HePCt-", "HpPct-", "OcPct-", "EnPct-", "HCt-", "MHcT-", "DHcT-",
+    "THCt-", "TeHCt-", "PeHCt-", "HeHCt-", "HpHct-", "OcHct-", "EnHct-", "HpCt-", "MHpcT-",
+    "DHpcT-", "THpCt-", "TeHpCt-", "PeHpCt-", "HeHpCt-", "HpHpct-", "OcHpct-", "EnHpct-",
+    "OCt-", "MOcT-", "DOcT-", "TOCt-", "TeOCt-", "PeOCt-", "HeOCt-", "HpOct-", "OcOct-",
+    "EnOct-", "Ent-", "MEnT-", "DEnT-", "TEnt-", "TeEnt-", "PeEnt-", "HeEnt-", "HpEnt-",
+    "OcEnt-", "EnEnt-", "Hect-", "MeHect-"
 ]
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
@@ -30,6 +30,10 @@ _log10 = math.log10
 
 # You can ignore these, these are only to help the code.
 def correct(x, base3=10):
+    is_inf = 0
+    try: is_inf = math.isinf(x)
+    except: pass
+    if is_inf: raise OverflowError("Infinity")
     if isinstance(x, (int, float)): return correct([0 if x >= 0 else 1, abs(x)], base3)
 
     if isinstance(x, str):
@@ -98,7 +102,7 @@ def correct(x, base3=10):
             arr = correct(arr[:2] + mid + arr[i:])
 
         return arr
-    raise TypeError("Unsupported type for correct")
+    raise TypeError("Unsupported type for correct. Input:" + str(x))
 def from_hyper_e(x):
     if not x.lstrip('-').startswith('E'): raise ValueError("Not a hyper_e string")
     sign = int(x.startswith('-'))
@@ -277,7 +281,6 @@ def hyper_log(x, base2=10, k=1):
     k = tofloat(k)
     if k < 1: raise ValueError("k must be >= 1")
     if x[0] == 1: raise ValueError("Can't hyper_log a negative")
-    print(4848)
     if k == 1: return logbase(x, base2)
     if base2 == None or gt(base4,10):
         if gt(maximum(base4, y), [0, 10000000000, 9007199254740989]):
@@ -429,6 +432,7 @@ def gamma(x):
 def tetration(a, r):
     a = correct(a)
     r = correct(r)
+    if r[0] == 1: raise ValueError("Tetration height cant be a negative")
     if lte(r, -2): raise ValueError("tetr(a, r): undefined for r <= -2 on the principal branch")
 
     if eq(a, 0):
@@ -558,10 +562,11 @@ def logbase(a,b):
     return divide(log(a),log(b))
 def ln(a): return multiply(log(a),2.302585092994046) # log10(a)/log10(e) or log10(a)*(1/log10(e))
 def sqrt(a): return root(a,2)
-def root(a,b): 
-    if lt(b,0): raise ValueError("Can't root a negative")
-    if gt(b,0) and lt(b,1): return power(a,divide(1,b))
-    if eq(b, 0): raise ValueError("Root of 0 is undefined")
+def root(a,b):
+    a, b = correct(a), correct(b)
+    if a[0] == 1: raise ValueError("Cant root a negative")
+    if gt(b,[[0, 0], 0, 0]) and lt(b,[[0, 1], 0, 0]): return power(a,divide(1,b))
+    if eq(b, [[0, 0], 0, 0]): raise ValueError("Root of 0 is undefined")
     return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 # Short names
@@ -671,7 +676,8 @@ def _suffix(x, suffix_decimals=decimals):
             suffixpart2(part_val - 1)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
-    return format_with_suffix(base_num, "") + txt
+    return_thingy = format_with_suffix(base_num, "") + txt
+    return return_thingy[:-1] if return_thingy.endswith('-') else return_thingy
 
 def suffix(num, small=False):
     precision2 = max(5, decimals)
