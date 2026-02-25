@@ -755,6 +755,7 @@ def format(num, decimals=decimals, small=False):
     n = correct(num)
     if len(n) == 2 and abs(n[1]) < 1e-308: return f"{0:.{decimals}f}"
     if n[0] == 1: return "-" + format(neg(n), decimals)
+    if eq(n, 0): return "0"
     if lt(n, 0.0001):
         inv = 1/tofloat(n)
         return "1/" + format(inv, decimals)
