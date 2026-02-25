@@ -4,9 +4,9 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
+precise_arrow = True # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
 arrow_precision = 44 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
-max_suffix = 63 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 1e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -358,14 +358,16 @@ def subtract(a,b):
     if a[0] == 0 and b[0] == 0: return addlayer(tofloat(log(a)) + tofloat(log(1 - tofloat(addlayer(tofloat(log(b)) - tofloat(log(a)))))))
 
 def multiply(a, b):
-    A = correct(a)
-    B = correct(b)
-    result_sign = A[0] ^ B[0]
-    if gt(A, [0, MAX_SAFE_INT, 1]): return A
-    if len(A) == 2 and len(B) == 2:
-        val = (A[1] if A[0] == 0 else -A[1]) * (B[1] if B[0] == 0 else -B[1])
+    a = correct(a)
+    b = correct(b)
+    result_sign = a[0] ^ b[0]
+    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]):
+        if a[2] != b[2]: return maximum(a,b)
+        return addlayer(add(log(a), log(b)))
+    if len(a) == 2 and len(b) == 2:
+        val = (a[1] if a[0] == 0 else -a[1]) * (b[1] if b[0] == 0 else -b[1])
         return correct([0 if val >= 0 else 1, abs(val)])
-    result = addlayer(add(log(A), log(B)))
+    result = addlayer(add(log(a), log(b)))
     return result if result_sign == 0 else neg(result)
 
 def divide(a, b):
@@ -426,7 +428,7 @@ def gamma(x):
     l += 1 / (1260 * np)
     np *= n2
     l -= 1 / (1680 * np)
-    return exp(correct(l))
+    return exp(l)
 
 # From ExpantaNum.js
 def tetration(a, r):
@@ -567,6 +569,13 @@ def root(a,b):
     if a[0] == 1: raise ValueError("Cant root a negative")
     if gt(b,[[0, 0], 0, 0]) and lt(b,[[0, 1], 0, 0]): return power(a,divide(1,b))
     if eq(b, [[0, 0], 0, 0]): raise ValueError("Root of 0 is undefined")
+    float_b = tofloat(b)
+    if len(a) > 3: return addlayer(divide(log(a),b))
+    if len(a) == 3 and float_b != None:
+        if a[2] == 1: return correct([0, a[1]/float_b, 1])
+        if a[2] == 2: return correct([0, a[1]-1+_log10(10/float_b), 2])
+        return addlayer(divide(log(a),b))
+    if float_b != None: return correct([0, a[1]**(1/float_b)])
     return addlayer(divide(log(a),b))
 def exp(x): return power(2.718281828459045, x)
 # Short names
@@ -653,9 +662,9 @@ def _suffix(x, suffix_decimals=decimals):
         txt += SecondOnes[Tens]
         txt += ThirdOnes[Hundreds]
 
-    def suffixpart2(n):
+    def suffixpart2(n, i):
         nonlocal txt
-        if n > 0: n += 1
+        if n > 0 or i == 0: n += 1
         if n > 1000: n = n % 1000
         Hundreds = int(n / 100)
         n = n % 100
@@ -673,7 +682,7 @@ def _suffix(x, suffix_decimals=decimals):
         power_val = 10 ** (i * 3)
         if SNumber >= power_val:
             part_val = int(SNumber / power_val)
-            suffixpart2(part_val - 1)
+            suffixpart2(part_val - 1, i)
             txt += MultOnes[i]
             SNumber = SNumber % power_val
     return_thingy = format_with_suffix(base_num, "") + txt
@@ -693,36 +702,15 @@ def suffix(num, small=False):
     elif lt(n, 1000): return regular_format(n, decimals)
     elif lt(n, MAX_SAFE_INT): return _suffix(n)
     elif lt(n, [0, max_suffix, 1]): return _suffix(n)
-    elif lt(n, [0, max_suffix, 2]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return regular_format([0, m], p) + "e" + _suffix(e)
-    elif lt(n, [0, max_suffix, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
-        if bottom >= 1e9:
-            bottom = _log10(bottom)
-            rep += 1
-        m = 10 ** (bottom - int(bottom))
-        e = int(bottom)
-        p = precision2
-        return "e" + regular_format([0, m], p) + "e" + _suffix(e)
+    elif lt(n, [0, max_suffix, 2]): return "e" + _suffix(log(n))
     elif lt(n, [0, 10000000000, 3]):
-        bottom = n[1]
-        rep = n[2] - 1
+        bottom = array_search(n, 1)
+        rep = array_search(n, 2) - 1
         if bottom >= 1e9:
             bottom = _log10(bottom)
             rep += 1
-        m = 10 ** (bottom - int(bottom))
         e = int(bottom)
-        p = precision2
-        return "ee" + regular_format([0, m], p) + "e" + _suffix(e)
+        return ("e" * int(rep)) + _suffix([0, e+bottom - int(bottom), 1])
     pol = polarize(n)
     if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + _suffix(pol['top'], 0)
     elif lt(n, [0, 10000000000, 8, 3]):
