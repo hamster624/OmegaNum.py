@@ -361,7 +361,7 @@ def multiply(a, b):
     a = correct(a)
     b = correct(b)
     result_sign = a[0] ^ b[0]
-    if gt(a, [[0, 1000, 2], 0, 0]) or gt(b, [[0, 1000, 2], 0, 0]):
+    if gt(a, [0, 1000, 2]) or gt(b, [0, 1000, 2]):
         if a[2] != b[2]: return maximum(a,b)
         return addlayer(add(log(a), log(b)))
     if len(a) == 2 and len(b) == 2:
