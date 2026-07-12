@@ -4,9 +4,9 @@ import math
 #sys.setrecursionlimit(100000)
 #--Edtiable things--
 decimals = 16 # How many decimals (duh). Max 16
-precise_arrow = True # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
+precise_arrow = False # RECOMMENDED TO BE FALSE. Arrow operation output would be less precise for a LARGE SPEED increase im talking 1,000 times faster minimum (depending on what you're trying to do). True means it uses full precision and False makes it be less precise.
 arrow_precision = 44 # How precise the arrows should be. I found this to be the perfect number if you use the format "format" and no more is needed. (Note: This does nothing if precise_arrow = True)
-max_suffix = 1e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
+max_suffix = 1.79e308 # At how much 10^x it goes from being suffix to scientific. Example: 1e1,000 -> e1K
 FirstOnes = ["", "U", "D", "T", "Qd", "Qn", "Sx", "Sp", "Oc", "No"]
 SecondOnes = ["", "De", "Vt", "Tg", "qg", "Qg", "sg", "Sg", "Og", "Ng"]
 ThirdOnes = ["", "Ce", "Du", "Tr", "Qa", "Qi", "Se", "Si", "Ot", "Ni"]
@@ -23,10 +23,14 @@ MultOnes = [
     "EnOct-", "Ent-", "MEnT-", "DEnT-", "TEnt-", "TeEnt-", "PeEnt-", "HeEnt-", "HpEnt-",
     "OcEnt-", "EnEnt-", "Hect-", "MeHect-"
 ]
+
 #--End of editable things--
 MAX_SAFE_INT = 2**53 - 1
 MAX_LOGP1_REPEATS = 48
 _log10 = math.log10
+
+LOG10_PHI = 0.20898764024997873
+LOG10_SQRT5 = 0.3494850021680094
 
 # You can ignore these, these are only to help the code.
 def correct(x, base3=10):
@@ -45,6 +49,7 @@ def correct(x, base3=10):
 
     if isinstance(x, list):
         arr = x[:]
+        if arr[1] == 0: return [0, 0]
         if not arr: return [0, 0]
         if len(arr) == 1: return [0 if arr[0] >= 0 else 1, abs(arr[0])]
         if arr[0] not in (0, 1): raise ValueError(f"First element must be 0 (positive) or 1 (negative) (array:{arr})")
@@ -362,7 +367,7 @@ def multiply(a, b):
     b = correct(b)
     result_sign = a[0] ^ b[0]
     if gt(a, [0, 1000, 2]) or gt(b, [0, 1000, 2]):
-        if a[2] != b[2]: return maximum(a,b)
+        if (a + [0])[2] != (b + [0])[2]: return maximum(a,b)
         return addlayer(add(log(a), log(b)))
     if len(a) == 2 and len(b) == 2:
         val = (a[1] if a[0] == 0 else -a[1]) * (b[1] if b[0] == 0 else -b[1])
@@ -678,9 +683,15 @@ def _suffix(x, suffix_decimals=decimals):
         suffixpart(SNumber)
         return format_with_suffix(base_num, "") + txt
 
+    thing = None
+    largest = 0
     for i in range(len(MultOnes)-1, -1, -1):
         power_val = 10 ** (i * 3)
         if SNumber >= power_val:
+            if thing == None:
+                largest = i
+                thing = True
+            if i == largest-5: break
             part_val = int(SNumber / power_val)
             suffixpart2(part_val - 1, i)
             txt += MultOnes[i]
@@ -749,9 +760,9 @@ def suffix(num, small=False):
 
 # From https://github.com/cloudytheconqueror/letter-notation-format
 def format(num, decimals=decimals, small=False):
-    precision2 = max(5, decimals)
-    precision3 = max(4, decimals)
-    precision4 = max(6, decimals)
+    precision2 = max(0, decimals)
+    precision3 = max(0, decimals)
+    precision4 = max(0, decimals)
     n = correct(num)
     if len(n) == 2 and abs(n[1]) < 1e-308: return f"{0:.{decimals}f}"
     if n[0] == 1: return "-" + format(neg(n), decimals)
@@ -770,7 +781,7 @@ def format(num, decimals=decimals, small=False):
             rep += 1
         m = 10 ** (bottom - int(bottom))
         e = int(bottom)
-        p = precision2 if bottom < 1_000_000 else 2
+        p = precision2 if bottom < 1_000_000 else 0
         return ("e" * int(rep)) + regular_format([0, m], p) + "e" + comma_format(e)
     pol = polarize(n)
     if lt(n, [0, 10000000000, 999998]): return regular_format([0, pol['bottom']], precision3) + "F" + comma_format(pol['top'])
@@ -836,7 +847,7 @@ def fromformat(x):
         x = x.strip("F")
     
     if x.startswith("e") and (x.count("e") != 1):
-        start_array[2] = x.count("e")-1
+        start_array[2] = x.count("e")
         x = x.strip("e")
     if 'e' in x:
         before, after = x.split("e")
@@ -868,6 +879,7 @@ def fromformat(x):
         return arrow(10,float(after)+1,float(before), prec=False)
     try: start_array[1] += float(x)
     except: pass
+    print(start_array)
     return correct(start_array)
 # Sniffed breaking bad money making stuff a bit too much to code and in the result got this code. Oh and spent 2h 15min for this trash
 def fromstring(x):
@@ -936,3 +948,24 @@ def arrow_format(x):
     arrow = pol['height']+1
     if arrow > 7: return "10{" + str(arrow) + "}" + str(_log10(pol['bottom']) + pol['top'])
     return "10" + "^"*arrow + str(format(_log10(pol['bottom']) + pol['top']))
+
+F_SMALL = [0, 1]
+for i in range(2, 101): F_SMALL.append(F_SMALL[i-1] + F_SMALL[i-2])
+
+def fib(n):
+    n = correct(n)
+    if n[0] == 1: raise ValueError("Cant fibonacci a negative number")
+    if (not _is_int_like(n)) and lte(n, 100): raise ValueError("Cant fibonacci a non-integer number")
+    if lte(n, 100): result = F_SMALL[n]
+    else:
+        x = sub(mul(n, LOG10_PHI), LOG10_SQRT5)
+        x_floor = floor(x)
+        frac = sub(x, x_floor)
+        result = mul(addlayer(frac), addlayer(x_floor))
+    return result
+
+def ssqrt(x):
+    x = correct(x)
+    if x[1] != 0 or x[2] != 0: return x
+    if x[0][0] == 1: raise ValueError("Can't super-sqrt a negative")
+    return exp(lambertw(ln(x)))
